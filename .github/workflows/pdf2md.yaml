@@ -38,8 +38,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./pdf2md
-          file: ./pdf2md/Dockerfile
+          context: .
+          file: ./Dockerfile
           cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/pdf2md:cache
           cache-to: type=registry,ref=ghcr.io/${{ github.repository }}/pdf2md:cache,mode=max
           tags: ${{ steps.meta.outputs.tags }}
