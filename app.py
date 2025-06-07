@@ -17,13 +17,19 @@ if os.environ.get('GUNICORN_WORKER_ID', '0') == '0':
         print("Loading models in worker 0...")
         model_dict = create_model_dict()
         print("Models loaded in worker 0")
-        models_ready = True
+        with open('/tmp/models_ready', 'w') as f:
+            f.write('1')
     except Exception as e:
         print(f"Failed to download models at startup: {str(e)}")
-        models_ready = False
-else:
-    # Other workers wait briefly and assume models are ready if worker 0 succeeded
-    models_ready = True
+        with open('/tmp/models_ready', 'w') as f:
+            f.write('0')
+
+def are_models_ready():
+    try:
+        with open('/tmp/models_ready', 'r') as f:
+            return f.read().strip() == '1'
+    except FileNotFoundError:
+        return False
 
 config = {
     "disable_image_extraction": True,
@@ -31,18 +37,9 @@ config = {
     "disable_tqdm": True
 }
 
-config_parser = ConfigParser(config)
-
-converter = PdfConverter(
-    config=config_parser.generate_config_dict(),
-    artifact_dict=model_dict,
-    processor_list=config_parser.get_processors(),
-    renderer=config_parser.get_renderer()
-)
-
 @app.route('/convert', methods=['GET'])
 def convert_pdf_to_markdown():
-    if not models_ready:
+    if not are_models_ready():
         return jsonify({'error': 'Models not ready'}), 503
 
     file_id = request.args.get('file_id')
@@ -58,6 +55,13 @@ def convert_pdf_to_markdown():
         response = requests.get(url, headers=headers)
         response.raise_for_status()
         file_stream = BytesIO(response.content)
+        config_parser = ConfigParser(config)
+        converter = PdfConverter(
+            config=config_parser.generate_config_dict(),
+            artifact_dict=model_dict,
+            processor_list=config_parser.get_processors(),
+            renderer=config_parser.get_renderer()
+        )
         rendered = converter(file_stream)
         markdown, _, _ = text_from_rendered(rendered)
         return jsonify({'markdown': markdown}), 200
@@ -66,9 +70,10 @@ def convert_pdf_to_markdown():
     except Exception as e:
         return jsonify({'error': f"Conversion error: {str(e)}"}), 500
 
+
 @app.route('/health', methods=['GET'])
 def healthcheck():
-    if not models_ready:
+    if not are_models_ready():
         return jsonify({'status': 'unhealthy', 'error': 'Models not loaded'}), 503
     return jsonify({'status': 'healthy'}), 200
 
