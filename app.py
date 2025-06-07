@@ -7,9 +7,21 @@ from marker.output import text_from_rendered
 from marker.config.parser import ConfigParser
 
 app = Flask(__name__)
+models_ready = False
+
+# Download models at startup
+try:
+    model_dict = create_model_dict()
+    models_ready = True
+except Exception as e:
+    print(f"Failed to download models at startup: {str(e)}")
+    models_ready = False
 
 @app.route('/convert', methods=['GET'])
 def convert_pdf_to_markdown():
+    if not models_ready:
+        return jsonify({'error': 'Models not ready'}), 503
+
     file_id = request.args.get('file_id')
     authorization = request.headers.get('Authorization')
 
@@ -34,7 +46,7 @@ def convert_pdf_to_markdown():
 
         converter = PdfConverter(
             config=config_parser.generate_config_dict(),
-            artifact_dict=create_model_dict(),
+            artifact_dict=model_dict,
             processor_list=config_parser.get_processors(),
             renderer=config_parser.get_renderer()
         )
@@ -51,6 +63,8 @@ def convert_pdf_to_markdown():
 
 @app.route('/health', methods=['GET'])
 def healthcheck():
+    if not models_ready:
+        return jsonify({'status': 'unhealthy', 'error': 'Models not loaded'}), 503
     return jsonify({'status': 'healthy'}), 200
 
 if __name__ == '__main__':
