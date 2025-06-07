@@ -1,0 +1,4 @@
+Flask==2.3.3
+gunicorn==23.0.0
+marker-pdf==1.7.4
+requests==2.32.3

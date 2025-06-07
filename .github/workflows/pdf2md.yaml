@@ -1,0 +1,47 @@
+name: Build pdf2md
+
+permissions:
+  contents: read
+  packages: write
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  build-push:
+    runs-on: ubuntu-latest
+    name: Build Docker image & push to ghcr.io
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            ghcr.io/${{ github.repository }}/pdf2md
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=sha-,format=short
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./pdf2md
+          file: ./pdf2md/Dockerfile
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/pdf2md:cache
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository }}/pdf2md:cache,mode=max
+          tags: ${{ steps.meta.outputs.tags }}
+          platforms: linux/amd64
+          push: true
