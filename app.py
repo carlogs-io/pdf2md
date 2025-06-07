@@ -5,19 +5,40 @@ from marker.converters.pdf import PdfConverter
 from marker.models import create_model_dict
 from marker.output import text_from_rendered
 from marker.config.parser import ConfigParser
+import os
 
 app = Flask(__name__)
 models_ready = False
+model_dict = None
 
-# Download models at startup
-try:
-    print("Loading models...")
-    model_dict = create_model_dict()
-    print("Models loaded")
+# Load models only in the first Gunicorn worker
+if os.environ.get('GUNICORN_WORKER_ID', '0') == '0':
+    try:
+        print("Loading models in worker 0...")
+        model_dict = create_model_dict()
+        print("Models loaded in worker 0")
+        models_ready = True
+    except Exception as e:
+        print(f"Failed to download models at startup: {str(e)}")
+        models_ready = False
+else:
+    # Other workers wait briefly and assume models are ready if worker 0 succeeded
     models_ready = True
-except Exception as e:
-    print(f"Failed to download models at startup: {str(e)}")
-    models_ready = False
+
+config = {
+    "disable_image_extraction": True,
+    "output_format": "markdown",
+    "disable_tqdm": True
+}
+
+config_parser = ConfigParser(config)
+
+converter = PdfConverter(
+    config=config_parser.generate_config_dict(),
+    artifact_dict=model_dict,
+    processor_list=config_parser.get_processors(),
+    renderer=config_parser.get_renderer()
+)
 
 @app.route('/convert', methods=['GET'])
 def convert_pdf_to_markdown():
@@ -36,28 +57,10 @@ def convert_pdf_to_markdown():
     try:
         response = requests.get(url, headers=headers)
         response.raise_for_status()
-
         file_stream = BytesIO(response.content)
-
-        config = {
-            "disable_image_extraction": True,
-            "output_format": "markdown",
-            "disable_tqdm": True
-        }
-        config_parser = ConfigParser(config)
-
-        converter = PdfConverter(
-            config=config_parser.generate_config_dict(),
-            artifact_dict=model_dict,
-            processor_list=config_parser.get_processors(),
-            renderer=config_parser.get_renderer()
-        )
-
         rendered = converter(file_stream)
         markdown, _, _ = text_from_rendered(rendered)
-
         return jsonify({'markdown': markdown}), 200
-
     except requests.exceptions.RequestException as e:
         return jsonify({'error': f"Failed to fetch file: {str(e)}"}), 500
     except Exception as e:
