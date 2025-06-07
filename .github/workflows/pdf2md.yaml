@@ -28,7 +28,7 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: |
-            ghcr.io/${{ github.repository }}/pdf2md
+            ghcr.io/${{ github.repository }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,prefix=sha-,format=short
@@ -40,8 +40,8 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/pdf2md:cache
-          cache-to: type=registry,ref=ghcr.io/${{ github.repository }}/pdf2md:cache,mode=max
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}:cache
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository }}:cache,mode=max
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/amd64
           push: true
