@@ -11,7 +11,9 @@ models_ready = False
 
 # Download models at startup
 try:
+    print("Loading models...")
     model_dict = create_model_dict()
+    print("Models loaded")
     models_ready = True
 except Exception as e:
     print(f"Failed to download models at startup: {str(e)}")
