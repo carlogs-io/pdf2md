@@ -11,13 +11,13 @@ app = Flask(__name__)
 @app.route('/convert', methods=['GET'])
 def convert_pdf_to_markdown():
     file_id = request.args.get('file_id')
-    access_token = request.args.get('access_token')
+    authorization = request.headers.get('Authorization')
 
-    if not file_id or not access_token:
-        return jsonify({'error': 'Missing file_id or access_token'}), 400
+    if not file_id or not authorization:
+        return jsonify({'error': 'Missing file_id or Authorization header'}), 400
 
     url = f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media"
-    headers = {"Authorization": f"Bearer {access_token}"}
+    headers = {"Authorization": authorization}
 
     try:
         response = requests.get(url, headers=headers)
