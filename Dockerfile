@@ -16,11 +16,12 @@ RUN python3 -m venv /app/venv
 ENV PATH="/app/venv/bin:$PATH"
 
 # Copy the Python script and requirements into the container
-COPY app.py .
 COPY requirements.txt .
 
 # Install Python dependencies in the virtual environment
 RUN pip3 install --no-cache-dir -r requirements.txt
+
+COPY app.py .
 
 # Expose the port the app runs on
 EXPOSE 5000
