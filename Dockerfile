@@ -1,5 +1,5 @@
 # Use NVIDIA's CUDA base image for better GPU support
-FROM nvidia/cuda:12.4.0-base-ubuntu22.04
+FROM nvidia/cuda:12.8.0-base-ubuntu24.04
 
 # Set the working directory in the container
 WORKDIR /app
