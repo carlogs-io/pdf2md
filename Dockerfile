@@ -1,5 +1,5 @@
 # Use NVIDIA's CUDA base image for better GPU support
-FROM nvidia/cuda:12.9.0-base-ubuntu24.04
+FROM nvidia/cuda:12.4.0-base-ubuntu24.04
 
 # Set the working directory in the container
 WORKDIR /app
@@ -27,4 +27,4 @@ COPY app.py .
 EXPOSE 5000
 
 # Command to run the app with Gunicorn for production
-CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:5000", "app:app"]
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "app:app"]
