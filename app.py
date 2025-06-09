@@ -8,16 +8,12 @@ from marker.config.parser import ConfigParser
 
 app = Flask(__name__)
 models_ready = False
-model_dict = None
-
-config = {
-    "disable_image_extraction": True,
-    "output_format": "markdown",
-    "disable_tqdm": True
-}
+converter = None
 
 @app.route('/convert', methods=['GET'])
 def convert_pdf_to_markdown():
+    if converter == None:
+        return jsonify({'error': 'Converter not loaded'}), 503
 
     file_id = request.args.get('file_id')
     authorization = request.headers.get('Authorization')
@@ -32,13 +28,6 @@ def convert_pdf_to_markdown():
         response = requests.get(url, headers=headers)
         response.raise_for_status()
         file_stream = BytesIO(response.content)
-        config_parser = ConfigParser(config)
-        converter = PdfConverter(
-            config=config_parser.generate_config_dict(),
-            artifact_dict=model_dict,
-            processor_list=config_parser.get_processors(),
-            renderer=config_parser.get_renderer()
-        )
         rendered = converter(file_stream)
         markdown, _, _ = text_from_rendered(rendered)
         return jsonify({'markdown': markdown}), 200
@@ -49,14 +38,25 @@ def convert_pdf_to_markdown():
 
 @app.route('/health', methods=['GET'])
 def healthcheck():
-    if model_dict == None:
+    if converter == None:
         return jsonify({'status': 'loading'}), 503
     else:
         return jsonify({'status': 'healthy'}), 200
 
-print("Loading models...")
-model_dict = create_model_dict()
-print("Models loaded", flush=True)
+print("Loading converter...")
+config = {
+    "disable_image_extraction": True,
+    "output_format": "markdown",
+    "disable_tqdm": True
+}
+config_parser = ConfigParser(config)
+converter = PdfConverter(
+    config=config_parser.generate_config_dict(),
+    artifact_dict=create_model_dict(),
+    processor_list=config_parser.get_processors(),
+    renderer=config_parser.get_renderer()
+)
+print("Converter loaded", flush=True)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
