@@ -106,7 +106,7 @@ def handle_conversion_request(file_content, source):
         return jsonify({'error': 'No file data provided'}), 400
     return convert_to_markdown(file_content, source)
 
-# setup_gpu_monitoring()
+setup_gpu_monitoring()
 log_device_info()
 
 @app.route('/convert-gdrive', methods=['GET'])
