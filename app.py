@@ -32,11 +32,10 @@ def log_gpu_usage():
         try:
             # Run nvidia-smi to get GPU usage
             result = subprocess.run(
-                ['nvidia-smi', '--query-gpu=utilization.gpu,utilization.memory', '--format=csv,nounits,noheader'],
+                ['nvidia-smi'],
                 capture_output=True, text=True, check=True
             )
-            gpu_usage = result.stdout.strip()
-            logger.debug(f"NVIDIA GPU Usage: {gpu_usage} (% utilization.gpu, % utilization.memory)")
+            logger.debug(result.stdout)
         except subprocess.CalledProcessError as e:
             logger.error(f"Failed to query NVIDIA GPU usage: {str(e)}")
         except Exception as e:
