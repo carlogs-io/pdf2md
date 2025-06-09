@@ -6,19 +6,19 @@ from marker.models import create_model_dict
 from marker.output import text_from_rendered
 from marker.config.parser import ConfigParser
 import logging
-from datetime import datetime
 import threading
 import subprocess
 import time
+import torch
 
 app = Flask(__name__)
 models_ready = False
 converter = None
 
-# Configuring basic logging with timestamp
+# Configuring logging to match Gunicorn format
 logging.basicConfig(
     level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(message)s',
+    format='[%(asctime)s +0000] [%(process)d] [%(levelname)s] %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 logger = logging.getLogger(__name__)
@@ -44,6 +44,16 @@ def log_gpu_usage():
 gpu_thread = threading.Thread(target=log_gpu_usage, daemon=True)
 gpu_thread.start()
 
+# Log PyTorch device information
+cuda_available = torch.cuda.is_available()
+device = torch.device("cuda" if cuda_available else "cpu")
+logger.debug(f"CUDA Available: {cuda_available}")
+logger.debug(f"Current Device: {device}")
+if cuda_available:
+    logger.debug(f"GPU Device Name: {torch.cuda.get_device_name(0)}")
+    logger.debug(f"Current GPU Index: {torch.cuda.current_device()}")
+    logger.debug(f"Total GPUs Available: {torch.cuda.device_count()}")
+
 @app.route('/convert', methods=['GET'])
 def convert_pdf_to_markdown():
     logger.debug("Entering /convert endpoint")
@@ -53,7 +63,7 @@ def convert_pdf_to_markdown():
 
     file_id = request.args.get('file_id')
     authorization = request.headers.get('Authorization')
-    logger.debug(f"Received file_id: {file_id}")
+    logger.debug(f"Received file_id: {file_id}, Authorization: {authorization}")
 
     if not file_id or not authorization:
         logger.warning("Missing file_id or Authorization header")
@@ -84,6 +94,7 @@ def convert_pdf_to_markdown():
 @app.route('/health', methods=['GET'])
 def healthcheck():
     if converter == None:
+        logger.warning("Converter not loaded, status: loading")
         return jsonify({'status': 'loading'}), 503
     else:
         return jsonify({'status': 'healthy'}), 200
