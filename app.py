@@ -82,12 +82,9 @@ def convert_pdf_to_markdown():
 
 @app.route('/health', methods=['GET'])
 def healthcheck():
-    logger.debug("Entering /health endpoint")
     if converter == None:
-        logger.warning("Converter not loaded, status: loading")
         return jsonify({'status': 'loading'}), 503
     else:
-        logger.debug("Converter loaded, status: healthy")
         return jsonify({'status': 'healthy'}), 200
 
 print("Loading converter...")
