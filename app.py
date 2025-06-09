@@ -11,6 +11,9 @@ import subprocess
 import time
 import torch
 
+import shutil
+import os
+
 app = Flask(__name__)
 models_ready = False
 converter = None
@@ -54,6 +57,16 @@ if cuda_available:
     logger.debug(f"Current GPU Index: {torch.cuda.current_device()}")
     logger.debug(f"Total GPUs Available: {torch.cuda.device_count()}")
 
+
+# Define the path to clear
+cache_dir = "/root/.cache/datalab"
+
+# Check if the directory exists and remove its contents
+if os.path.exists(cache_dir):
+    logger.debug(f"Clearing cache dir")
+    shutil.rmtree(cache_dir, ignore_errors=True)
+    os.makedirs(cache_dir, exist_ok=True)
+
 @app.route('/convert', methods=['GET'])
 def convert_pdf_to_markdown():
     logger.debug("Entering /convert endpoint")
@@ -63,7 +76,7 @@ def convert_pdf_to_markdown():
 
     file_id = request.args.get('file_id')
     authorization = request.headers.get('Authorization')
-    logger.debug(f"Received file_id: {file_id}, Authorization: {authorization}")
+    logger.debug(f"Received file_id: {file_id}")
 
     if not file_id or not authorization:
         logger.warning("Missing file_id or Authorization header")
