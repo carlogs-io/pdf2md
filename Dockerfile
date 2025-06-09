@@ -27,4 +27,4 @@ COPY app.py .
 EXPOSE 5000
 
 # Command to run the app with Gunicorn for production, with debug logging
-CMD ["gunicorn", "--preload", "--timeout", "300", "--workers", "8", "--bind", "0.0.0.0:5000", "--log-level", "debug", "app:app"]
+CMD ["python", "app.py"]
