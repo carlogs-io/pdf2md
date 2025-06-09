@@ -53,7 +53,7 @@ def convert_pdf_to_markdown():
 
     file_id = request.args.get('file_id')
     authorization = request.headers.get('Authorization')
-    logger.debug(f"Received file_id: {file_id}, Authorization: {authorization}")
+    logger.debug(f"Received file_id: {file_id}")
 
     if not file_id or not authorization:
         logger.warning("Missing file_id or Authorization header")
@@ -68,6 +68,7 @@ def convert_pdf_to_markdown():
         response.raise_for_status()
         logger.debug("Successfully fetched file from Google Drive")
         file_stream = BytesIO(response.content)
+        logger.debug("PDF conversion started")
         rendered = converter(file_stream)
         logger.debug("PDF conversion completed")
         markdown, _, _ = text_from_rendered(rendered)
