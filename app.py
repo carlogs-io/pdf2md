@@ -27,15 +27,16 @@ def log_gpu_usage():
     while True:
         try:
             result = subprocess.run(
-                ['nvidia-smi'],
+                ['nvidia-smi', '--query-gpu=index,name,utilization.gpu,temperature.gpu,fan.speed,power.draw,memory.used,memory.total', '--format=csv,noheader,nounits', '-i', '0'],
                 capture_output=True, text=True, check=True
             )
-            logger.debug(result.stdout)
+            output = result.stdout.strip().split(',')
+            logger.debug(f"GPU {output[0]} ({output[1]}): Util: {output[2]}%, Temp: {output[3]}°C, Fan: {output[4]}%, Power: {output[5]}W, Memory: {output[6]}/{output[7]} MB")
         except subprocess.CalledProcessError as e:
             logger.error(f"Failed to query NVIDIA GPU usage: {str(e)}")
         except Exception as e:
             logger.error(f"Error in GPU monitoring: {str(e)}")
-        time.sleep(3)
+        time.sleep(1)
 
 def setup_gpu_monitoring():
     gpu_thread = threading.Thread(target=log_gpu_usage, daemon=True)
@@ -106,7 +107,7 @@ def handle_conversion_request(file_content, source):
         return jsonify({'error': 'No file data provided'}), 400
     return convert_to_markdown(file_content, source)
 
-# setup_gpu_monitoring()
+setup_gpu_monitoring()
 log_device_info()
 
 @app.route('/convert-gdrive', methods=['GET'])
